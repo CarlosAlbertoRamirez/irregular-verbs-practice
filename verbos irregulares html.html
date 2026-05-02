@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spanish Irregular Verbs Master - Practice App</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --correct: #22c55e;
+            --wrong: #ef4444;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --gold: #f59e0b;
+            --purple: #8b5cf6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; padding: 20px; overflow-x: hidden;
+        }
+
+        .app-container {
+            width: 100%; max-width: 850px;
+            background: var(--card-bg);
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            overflow: hidden; position: relative;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .header { padding: 20px; background: rgba(15, 23, 42, 0.4); border-bottom: 1px solid #334155; }
+        .stats-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+        .stat { font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+        .progress-bg { height: 8px; background: #334155; border-radius: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--purple)); width: 0%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .quiz-body { padding: 30px; min-height: 480px; display: flex; flex-direction: column; }
+        .meta { display: flex; gap: 8px; margin-bottom: 15px; }
+        .tag { padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
+        .tag-cat { background: var(--purple); color: white; }
+        .tag-diff { background: #475569; color: white; }
+        
+        .instruction { font-size: 1rem; color: var(--text-muted); margin-bottom: 10px; font-style: italic; }
+        .question-text { font-size: 1.4rem; font-weight: 600; line-height: 1.5; margin-bottom: 25px; color: #fff; }
+
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .btn-opt { 
+            background: #2d3748; border: 2px solid #3d4a61; color: white; 
+            padding: 18px; border-radius: 16px; cursor: pointer; transition: all 0.2s;
+            font-size: 1.05rem; text-align: left;
+        }
+        .btn-opt:hover:not(:disabled) { border-color: var(--accent); background: #334155; transform: translateY(-2px); }
+        .btn-opt.selected { border-color: var(--accent); background: rgba(59, 130, 246, 0.2); }
+        .btn-opt.correct { border-color: var(--correct); background: rgba(34, 197, 94, 0.2); }
+        .btn-opt.wrong { border-color: var(--wrong); background: rgba(239, 68, 68, 0.2); }
+
+        .input-style {
+            width: 100%; padding: 20px; background: #0f172a; border: 2px solid #334155;
+            border-radius: 15px; color: white; font-size: 1.25rem; outline: none; transition: 0.3s;
+        }
+        .input-style:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+
+        .word-container { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; padding: 15px; background: #0f172a; border-radius: 15px; min-height: 60px; border: 2px dashed #334155; }
+        .word-pill { background: #475569; padding: 10px 20px; border-radius: 12px; cursor: pointer; user-select: none; font-weight: 600; box-shadow: 0 4px 0 #1e293b; }
+        .word-pill:active { transform: translateY(2px); box-shadow: none; }
+
+        .timer-bar { height: 4px; background: var(--gold); width: 100%; position: absolute; top: 0; left: 0; transition: width 0.1s linear; display: none; }
+
+        .feedback-box { margin-top: 20px; padding: 20px; border-radius: 15px; display: none; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .feedback-box.correct { background: rgba(34, 197, 94, 0.1); border-left: 5px solid var(--correct); }
+        .feedback-box.wrong { background: rgba(239, 68, 68, 0.1); border-left: 5px solid var(--wrong); }
+
+        .footer { margin-top: auto; display: flex; gap: 12px; padding-top: 30px; }
+        .btn { 
+            padding: 15px 25px; border-radius: 14px; border: none; font-weight: 700; 
+            cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.95rem;
+        }
+        .btn-primary { background: var(--accent); color: white; flex: 2; }
+        .btn-primary:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4); }
+        .btn-ghost { background: transparent; border: 2px solid #334155; color: var(--text-muted); flex: 1; }
+        .btn-ghost:hover { border-color: #475569; color: white; }
+
+        #results-screen { display: none; padding: 40px; text-align: center; }
+        .circle-score { width: 160px; height: 160px; border-radius: 50%; border: 10px solid var(--accent); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 30px; }
+        .score-num { font-size: 3.5rem; font-weight: 800; }
+        .error-log { text-align: left; margin-top: 30px; max-height: 350px; overflow-y: auto; padding-right: 15px; }
+        .error-item { background: #0f172a; padding: 15px; border-radius: 12px; margin-bottom: 12px; border-left: 4px solid var(--wrong); }
+
+        .shake { animation: shake 0.4s ease; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
+        
+        @media (max-width: 600px) {
+            .options-grid { grid-template-columns: 1fr; }
+            .quiz-body { padding: 20px; }
+            .footer { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container" id="main-container">
+    <div id="timer-bar" class="timer-bar"></div>
+
+    <!-- Start Screen -->
+    <div id="start-screen" style="padding: 60px 30px; text-align: center;">
+<h1 style="font-size: 2.8rem; margin-bottom: 15px; background: linear-gradient(to right, #3b82f6, #8b5cf6); background-clip: text; -webkit-background-clip: text; color: transparent; -webkit-text-fill-color: transparent;">Irregular Verbs Challenge</h1>        <p style="color: var(--text-muted); font-size: 1.2rem; margin-bottom: 40px;">Master Present, Preterite, and Future tenses with 45 interactive challenges.</p>
+        <button class="btn btn-primary" onclick="startApp()" style="margin: 0 auto; width: 250px;">Start Practice</button>
+    </div>
+
+    <!-- Quiz Screen -->
+    <div id="quiz-screen" style="display: none;">
+        <div class="header">
+            <div class="stats-bar">
+                <div class="stat">Progress: <span id="q-count">1/45</span></div>
+                <div class="stat" style="color: var(--correct);">✅ <span id="s-correct">0</span></div>
+                <div class="stat" style="color: var(--wrong);">❌ <span id="s-wrong">0</span></div>
+                <div class="stat" style="color: var(--gold);">🔥 Streak: <span id="s-streak">0</span></div>
+                <div class="stat">Points: <span id="s-points">0</span></div>
+            </div>
+            <div class="progress-bg"><div id="progress-fill" class="progress-fill"></div></div>
+        </div>
+
+        <div class="quiz-body">
+            <div class="meta">
+                <span id="tag-cat" class="tag tag-cat">Category</span>
+                <span id="tag-diff" class="tag tag-diff">Medium</span>
+            </div>
+            <p class="instruction" id="instruction">Instruction</p>
+            <h2 class="question-text" id="question">Loading question...</h2>
+
+            <div id="interaction-area"></div>
+
+            <p id="hint-text" style="display:none; margin-top:15px; color:var(--gold); font-weight:600; font-size:0.9rem;"></p>
+
+            <div id="feedback" class="feedback-box">
+                <h3 id="fb-title">Correct!</h3>
+                <p id="fb-text"></p>
+            </div>
+
+            <div class="footer">
+                <button class="btn btn-ghost" onclick="showHint()">Hint</button>
+                <button class="btn btn-ghost" onclick="skipQuestion()">Skip</button>
+                <button class="btn btn-primary" id="main-action" onclick="checkAnswer()">Check Answer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="results-screen">
+        <h1>Test Results</h1>
+        <div class="circle-score">
+            <span class="score-num" id="res-percent">0%</span>
+            <span style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;">Accuracy</span>
+        </div>
+        <div id="topic-summary" style="margin-bottom: 25px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;"></div>
+        <div class="error-log" id="error-log"></div>
+        <div class="footer">
+            <button class="btn btn-ghost" onclick="location.reload()">Restart</button>
+            <button class="btn btn-primary" id="btn-retry-errors" onclick="retryErrors()">Retry Mistakes</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const quizData = [
+        // PRESENT IRREGULARS
+        { type: "multiple-choice", difficulty: "fácil", category: "presente irregular", instruction: "Choose the correct present tense form:", question: "Yo no ____ la respuesta de esa pregunta.", options: ["sabré", "se", "sé", "supe"], correctAnswer: "sé", hint: "Verb SABER, 1st person singular.", explanation: "In the present tense, the first person of SABER is irregular: 'sé' (with an accent)." },
+        { type: "input", difficulty: "medio", category: "presente irregular", instruction: "Write the verb in parenthesis in present tense:", question: "Mis amigos (venir) ____ a mi casa todos los viernes.", correctAnswer: "vienen", hint: "Subject: 'Ellos'.", explanation: "VENIR has an e -> ie stem change in the present for 'ellos': 'vienen'." },
+        { type: "classification", difficulty: "fácil", category: "presente irregular", instruction: "Identify the tense of the word in CAPS:", question: "Yo siempre PONGO la mesa.", options: ["Presente", "Pretérito", "Futuro"], correctAnswer: "Presente", hint: "Think of the current routine.", explanation: "'Pongo' is the irregular first-person present of 'poner'." },
+        { type: "dialogue", difficulty: "medio", category: "presente irregular", instruction: "Complete the dialogue naturally:", question: "— ¿Qué ____ tú los fines de semana?\n— Generalmente juego fútbol.", options: ["haces", "hace", "hiciste", "harás"], correctAnswer: "haces", hint: "Question about routine (tú).", explanation: "We use the present tense for routines. The 'tú' form of HACER is 'haces'." },
+        { type: "multiple-choice", difficulty: "difícil", category: "presente irregular", instruction: "Select the correct option:", question: "Yo siempre ____ mis libros a clase.", options: ["traigo", "traje", "traeré", "traigo"], correctAnswer: "traigo", hint: "Verb: traer.", explanation: "TRAER is irregular in the 1st person present: 'traigo' (-go ending)." },
+        { type: "input", difficulty: "medio", category: "presente irregular", instruction: "Write the correct conjugation:", question: "Nosotros (querer) ____ viajar a México este año.", correctAnswer: "queremos", hint: "The 'nosotros' form doesn't stem-change.", explanation: "In present tense, 'nosotros' maintains the infinitive stem: 'queremos'." },
+        { type: "true-false", difficulty: "fácil", category: "presente irregular", instruction: "Is the explanation correct?", question: "The present tense form of 'ir' for 'yo' is 'vaya'.", options: ["True", "False"], correctAnswer: "False", hint: "I go to school = Yo ____ a la escuela.", explanation: "The correct form is 'voy'. 'Vaya' is the subjunctive mood." },
+        { type: "multiple-choice", difficulty: "medio", category: "presente irregular", instruction: "Form of JUGAR:", question: "Mi hijo ____ en el jardín todas las tardes.", options: ["juego", "jugó", "juega", "juegará"], correctAnswer: "juega", hint: "Stem change u -> ue.", explanation: "JUGAR is a radical-changing verb: 'él juega'." },
+        { type: "input", difficulty: "fácil", category: "presente irregular", instruction: "Write the verb:", question: "Yo (tener) ____ veinticinco años.", correctAnswer: "tengo", hint: "Tener in 1st person.", explanation: "The 1st person of TENER is irregular: 'tengo'." },
+        { type: "multiple-choice", difficulty: "medio", category: "presente irregular", instruction: "Form of DECIR:", question: "Ellos siempre ____ la verdad.", options: ["dicen", "decimos", "dijeron", "dirán"], correctAnswer: "dicen", hint: "They (Ellos).", explanation: "DECIR has an e -> i stem change in the present: 'dicen'." },
+
+        // PRETERITE IRREGULARS
+        { type: "multiple-choice", difficulty: "fácil", category: "pretérito irregular", instruction: "Select the correct past tense:", question: "Ayer yo ____ al cine con mis primos.", options: ["fui", "iba", "voy", "iré"], correctAnswer: "fui", hint: "Past tense of 'Ir'.", explanation: "The preterite of IR for 'yo' is 'fui'." },
+        { type: "input", difficulty: "medio", category: "pretérito irregular", instruction: "Complete with the past of HACER:", question: "Ella ____ la tarea muy rápido anoche.", correctAnswer: "hizo", hint: "Watch the spelling with 'z'.", explanation: "The 3rd person of HACER in preterite changes 'c' to 'z' to keep the sound: 'hizo'." },
+        { type: "multiple-choice", difficulty: "difícil", category: "pretérito irregular", instruction: "Select the correct form:", question: "Nosotros ____ que estudiar mucho para el examen pasado.", options: ["tuvimos", "tenemos", "tendremos", "tuvisteis"], correctAnswer: "tuvimos", hint: "Past of 'tener'.", explanation: "TENER uses the irregular stem 'tuv-' in preterite: 'tuvimos'." },
+        { type: "word-order", difficulty: "medio", category: "pretérito irregular", instruction: "Arrange the sentence:", question: "vino / a / la / fiesta / no / Juan", correctAnswer: "Juan no vino a la fiesta", hint: "Subject + no + verb + complement.", explanation: "VINO is the irregular preterite of 'venir' for 'él'." },
+        { type: "input", difficulty: "difícil", category: "pretérito irregular", instruction: "Write the past tense of PODER:", question: "Yo no ____ abrir la puerta ayer.", correctAnswer: "pude", hint: "Stem pud-.", explanation: "PODER in preterite uses the stem 'pud-': 'pude'." },
+        { type: "multiple-choice", difficulty: "medio", category: "pretérito irregular", instruction: "Past tense of ESTAR:", question: "¿Dónde ____ tú el lunes pasado?", options: ["estuviste", "estabas", "estás", "estuviste"], correctAnswer: "estuviste", hint: "Subject: 'Tú'.", explanation: "ESTAR in preterite uses the stem 'estuv-': 'estuviste'." },
+        { type: "transformation", difficulty: "medio", category: "pretérito irregular", instruction: "Change to Preterite:", question: "Yo sé la noticia. → Ayer yo ____ la noticia.", correctAnswer: "supe", hint: "Saber changes meaning in the past.", explanation: "SABER in preterite means 'to find out': 'supe'." },
+        { type: "classification", difficulty: "medio", category: "pretérito irregular", instruction: "Identify the tense:", question: "Ellos DIJERON que no querían venir.", options: ["Presente", "Pretérito", "Futuro"], correctAnswer: "Pretérito", hint: "Verb: decir.", explanation: "DIJERON is the irregular preterite of 'decir' for 'ellos'." },
+        { type: "dialogue", difficulty: "fácil", category: "pretérito irregular", instruction: "Complete natural response:", question: "— ¿Viste a María?\n— Sí, la ____ en la plaza hace una hora.", options: ["vi", "veo", "veré", "viste"], correctAnswer: "vi", hint: "Past of 'ver'.", explanation: "VER in preterite for 'yo' is 'vi' (no accent)." },
+        { type: "input", difficulty: "difícil", category: "pretérito irregular", instruction: "Write the verb TRAER:", question: "Ellos (traer) ____ muchas botellas de agua a la excursión.", correctAnswer: "trajeron", hint: "Stem traj-.", explanation: "Verbs ending in -ducir and traer drop the 'i' in the 3rd person plural ending: 'trajeron'." },
+
+        // FUTURE IRREGULARS
+        { type: "multiple-choice", difficulty: "fácil", category: "futuro irregular", instruction: "Choose the future tense:", question: "Mañana ____ mucho sol.", options: ["hará", "hace", "hizo", "hacerá"], correctAnswer: "hará", hint: "Verb: hacer.", explanation: "HACER has an irregular stem 'har-' in the future tense." },
+        { type: "input", difficulty: "medio", category: "futuro irregular", instruction: "Write the future of TENER:", question: "El próximo año nosotros ____ una casa nueva.", correctAnswer: "tendremos", hint: "Stem tendr-.", explanation: "TENER changes to 'tendr-' in the future tense." },
+        { type: "multiple-choice", difficulty: "medio", category: "futuro irregular", instruction: "Future of PONER:", question: "¿Dónde ____ (tú) las flores cuando llegues?", options: ["pondrás", "pones", "pusiste", "ponerás"], correctAnswer: "pondrás", hint: "Subject: 'Tú'.", explanation: "PONER has an irregular stem 'pondr-' in the future." },
+        { type: "true-false", difficulty: "medio", category: "futuro irregular", instruction: "Is it correct?", question: "The future tense of 'decir' for 'él' is 'decirá'.", options: ["True", "False"], correctAnswer: "False", hint: "Stem dir-.", explanation: "The correct irregular form is 'dirá'." },
+        { type: "input", difficulty: "difícil", category: "futuro irregular", instruction: "Future of SABER:", question: "Muy pronto tú ____ toda la verdad.", correctAnswer: "sabrás", hint: "Stem sabr-.", explanation: "SABER changes to 'sabr-' in the future." },
+        { type: "multiple-choice", difficulty: "medio", category: "futuro irregular", instruction: "Verb: SALIR:", question: "Yo ____ de la oficina a las 6:00 PM mañana.", options: ["saldré", "salgo", "salí", "saldrá"], correctAnswer: "saldré", hint: "Subject: 'Yo'.", explanation: "SALIR has an irregular stem 'saldr-' in the future." },
+        { type: "transformation", difficulty: "difícil", category: "futuro irregular", instruction: "Change to Future:", question: "No puedo ir. → Mañana no ____ ir.", correctAnswer: "podré", hint: "Poder: podr-.", explanation: "PODER changes to 'podr-' in the future tense." },
+        { type: "word-order", difficulty: "medio", category: "futuro irregular", instruction: "Arrange correctly:", question: "querremos / nosotros / más / helado", correctAnswer: "nosotros querremos más helado", hint: "Querr-.", explanation: "QUERER doubles the 'r' in its future stem." },
+        { type: "input", difficulty: "medio", category: "futuro irregular", instruction: "Complete sentence:", question: "Mañana (venir) ____ mi abuela de visita.", correctAnswer: "vendrá", hint: "Subject: 'Ella'.", explanation: "VENIR changes to 'vendr-' in the future." },
+        { type: "multiple-choice", difficulty: "fácil", category: "futuro irregular", instruction: "Future of 'Hay' (existence):", question: "En el futuro ____ robots en todas las casas.", options: ["habrá", "habrán", "hay", "había"], correctAnswer: "habrá", hint: "Existence (singular).", explanation: "The future of 'hay' is always 'habrá', regardless of plural subjects." },
+
+        // CONTRAST & ERRORS
+        { type: "classification", difficulty: "difícil", category: "contraste de tiempos", instruction: "Identify the tense:", question: "Yo QUISE decir la verdad pero no pude.", options: ["Presente", "Pretérito", "Futuro"], correctAnswer: "Pretérito", hint: "Past tense of 'querer'.", explanation: "'Quise' is the irregular preterite form." },
+        { type: "error-correction", difficulty: "medio", category: "corrección de errores", instruction: "Select the correct sentence:", question: "Incorrect: 'Yo hací la cena anoche.'", options: ["Yo hice la cena anoche.", "Yo hize la cena anoche.", "Yo hago la cena anoche."], correctAnswer: "Yo hice la cena anoche.", hint: "Hacer with 'c' in the 1st person.", explanation: "HACER is spelled with 'c' in the preterite 'hice'." },
+        { type: "transformation", difficulty: "medio", category: "contraste de tiempos", instruction: "Present to Preterite:", question: "Él pone la maleta aquí. → Ayer él ____ la maleta allí.", correctAnswer: "puso", hint: "Stem pus-.", explanation: "'Puso' is the 3rd person singular preterite of 'poner'." },
+        { type: "dialogue", difficulty: "medio", category: "contraste de tiempos", instruction: "Natural past tense:", question: "— ¿Por qué no viniste?\n— Es que no ____ el coche.", options: ["tuve", "tengo", "tendré", "tenía"], correctAnswer: "tuve", hint: "Specific past event.", explanation: "We use the preterite 'tuve' to indicate the specific moment of not having the car." },
+        { type: "multiple-choice", difficulty: "difícil", category: "contraste de tiempos", instruction: "Fill in the blanks:", question: "Ayer ____ frío, hoy ____ calor y mañana ____ viento.", options: ["hizo / hace / hará", "hace / hizo / hará", "hará / hace / hizo"], correctAnswer: "hizo / hace / hará", hint: "Past -> Present -> Future.", explanation: "Logical sequence of the weather verb HACER." },
+        { type: "input", difficulty: "difícil", category: "contraste de tiempos", instruction: "Write the verb (Poner):", question: "Normalmente la pongo aquí, pero ayer la ____ allá.", correctAnswer: "puse", hint: "Past of 'poner' (I).", explanation: "'Puse' is the irregular preterite form." },
+        { type: "true-false", difficulty: "fácil", category: "corrección de errores", instruction: "Is it correct?", question: "In the sentence 'Yo saldré mañana', the verb is in future.", options: ["True", "False"], correctAnswer: "True", hint: "Mañana (Tomorrow)...", explanation: "'Saldré' is the irregular future of 'salir'." },
+        { type: "error-correction", difficulty: "difícil", category: "corrección de errores", instruction: "Correct the sentence:", question: "Incorrect: '¿Tú sabiste la noticia?'", options: ["¿Tú supiste la noticia?", "¿Tú sabrás la noticia?", "¿Tú sabes la noticia?"], correctAnswer: "¿Tú supiste la noticia?", hint: "Saber in the past.", explanation: "The preterite stem of SABER is 'sup-'." },
+        { type: "multiple-choice", difficulty: "medio", category: "contraste de tiempos", instruction: "Saber vs Conocer:", question: "Yo ____ a tu hermano ayer en la fiesta.", options: ["conocí", "conozco", "conoceré", "supe"], correctAnswer: "conocí", hint: "Meeting someone for the first time.", explanation: "CONOCER in preterite often means 'met for the first time'." },
+        { type: "input", difficulty: "medio", category: "contraste de tiempos", instruction: "Transformation (Future):", question: "Ella viene tarde. → Mañana ella ____ tarde.", correctAnswer: "vendrá", hint: "Stem vendr-.", explanation: "Future irregular form of 'venir'." },
+        { type: "classification", difficulty: "fácil", category: "contraste de tiempos", instruction: "Identify the tense:", question: "FUI al mercado.", options: ["Presente", "Pretérito", "Futuro"], correctAnswer: "Pretérito", hint: "It already happened.", explanation: "'Fui' is the past of IR or SER." },
+        { type: "word-order", difficulty: "difícil", category: "contraste de tiempos", instruction: "Order the question:", question: "¿ / cuándo / la / dirás / verdad / ? / tú", correctAnswer: "¿cuándo dirás tú la verdad?", hint: "Future of 'decir'.", explanation: "'Dirás' is the irregular future form." },
+        { type: "input", difficulty: "medio", category: "contraste de tiempos", instruction: "Preterite of DAR:", question: "Yo le ____ un regalo a mi madre por su cumpleaños.", correctAnswer: "di", hint: "Very short form.", explanation: "DAR is irregular in preterite: di, diste, dio..." },
+        { type: "multiple-choice", difficulty: "difícil", category: "contraste de tiempos", instruction: "Poder in 3 tenses:", question: "Hoy no ____, ayer no ____ y mañana no ____.", options: ["puedo / pude / podré", "puedo / podré / pude", "pude / puedo / podré"], correctAnswer: "puedo / pude / podré", hint: "Today / Yesterday / Tomorrow.", explanation: "Sequence of PODER irregularities across tenses." },
+        { type: "dialogue", difficulty: "difícil", category: "contraste de tiempos", instruction: "Most natural form:", question: "— ¿Qué vas a hacer?\n— No sé, creo que ____ ejercicio.", options: ["haré", "hice", "hago", "haces"], correctAnswer: "haré", hint: "Future plan.", explanation: "We use the future tense for decisions made at the moment of speaking." }
+    ];
+
+    let state = {
+        questions: [],
+        currentIndex: 0,
+        correct: 0,
+        wrong: 0,
+        streak: 0,
+        points: 0,
+        errors: [],
+        isAnswered: false,
+        timer: null,
+        timeLeft: 15,
+        topics: {}
+    };
+
+    function startApp() {
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('quiz-screen').style.display = 'block';
+        state.questions = shuffle([...quizData]);
+        loadQuestion();
+    }
+
+    function shuffle(arr) {
+        return arr.sort(() => Math.random() - 0.5);
+    }
+
+    function loadQuestion() {
+        state.isAnswered = false;
+        const q = state.questions[state.currentIndex];
+        
+        document.getElementById('feedback').style.display = 'none';
+        document.getElementById('hint-text').style.display = 'none';
+        document.getElementById('main-action').innerText = "Check Answer";
+        document.getElementById('main-action').disabled = false;
+        
+        document.getElementById('q-count').innerText = `${state.currentIndex + 1}/${state.questions.length}`;
+        document.getElementById('progress-fill').style.width = `${(state.currentIndex / state.questions.length) * 100}%`;
+        document.getElementById('tag-cat').innerText = q.category;
+        document.getElementById('tag-diff').innerText = q.difficulty;
+        document.getElementById('instruction').innerText = q.instruction;
+        document.getElementById('question').innerText = q.question;
+
+        renderInteraction(q);
+        
+        clearInterval(state.timer);
+        if (q.difficulty === 'difícil' || Math.random() > 0.7) {
+            startTimer();
+        } else {
+            document.getElementById('timer-bar').style.display = 'none';
+        }
+    }
+
+    function renderInteraction(q) {
+        const container = document.getElementById('interaction-area');
+        container.innerHTML = '';
+
+        if (['multiple-choice', 'classification', 'error-correction', 'dialogue', 'true-false'].includes(q.type)) {
+            const grid = document.createElement('div');
+            grid.className = 'options-grid';
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-opt';
+                btn.innerText = opt;
+                btn.onclick = () => selectOption(btn);
+                grid.appendChild(btn);
+            });
+            container.appendChild(grid);
+        } else if (['input', 'transformation'].includes(q.type)) {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'input-style';
+            input.placeholder = 'Type here...';
+            input.id = 'user-input';
+            input.onkeypress = (e) => { if(e.key === 'Enter') checkAnswer(); };
+            container.appendChild(input);
+            input.focus();
+        } else if (q.type === 'word-order') {
+            const dropZone = document.createElement('div');
+            dropZone.className = 'word-container';
+            dropZone.id = 'drop-zone';
+            const bank = document.createElement('div');
+            bank.className = 'word-container';
+            bank.style.border = 'none';
+            const words = shuffle(q.correctAnswer.split(' '));
+            words.forEach(w => {
+                const span = document.createElement('span');
+                span.className = 'word-pill';
+                span.innerText = w;
+                span.onclick = () => moveWord(span, dropZone, bank);
+                bank.appendChild(span);
+            });
+            container.appendChild(dropZone);
+            container.appendChild(bank);
+        }
+    }
+
+    function selectOption(btn) {
+        if (state.isAnswered) return;
+        document.querySelectorAll('.btn-opt').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+    }
+
+    function moveWord(el, zone, bank) {
+        if (state.isAnswered) return;
+        if (el.parentElement === bank) zone.appendChild(el);
+        else bank.appendChild(el);
+    }
+
+    function startTimer() {
+        state.timeLeft = 15;
+        const bar = document.getElementById('timer-bar');
+        bar.style.display = 'block';
+        bar.style.width = '100%';
+        state.timer = setInterval(() => {
+            state.timeLeft -= 0.1;
+            bar.style.width = `${(state.timeLeft / 15) * 100}%`;
+            if (state.timeLeft <= 0) {
+                clearInterval(state.timer);
+                checkAnswer();
+            }
+        }, 100);
+    }
+
+    function showHint() {
+        const h = document.getElementById('hint-text');
+        h.innerText = "💡 Hint: " + state.questions[state.currentIndex].hint;
+        h.style.display = 'block';
+        state.points = Math.max(0, state.points - 5);
+        updateStatsUI();
+    }
+
+    function skipQuestion() {
+        state.currentIndex++;
+        if (state.currentIndex >= state.questions.length) showResults();
+        else loadQuestion();
+    }
+
+    function checkAnswer() {
+        if (state.isAnswered) {
+            state.currentIndex++;
+            if (state.currentIndex >= state.questions.length) showResults();
+            else loadQuestion();
+            return;
+        }
+
+        clearInterval(state.timer);
+        state.isAnswered = true;
+        const q = state.questions[state.currentIndex];
+        let userVal = "";
+
+        if (['input', 'transformation'].includes(q.type)) {
+            userVal = document.getElementById('user-input').value.trim().toLowerCase();
+        } else if (q.type === 'word-order') {
+            userVal = Array.from(document.getElementById('drop-zone').children).map(c => c.innerText).join(' ').toLowerCase();
+        } else {
+            const sel = document.querySelector('.btn-opt.selected');
+            userVal = sel ? sel.innerText : "";
+        }
+
+        const isCorrect = userVal === q.correctAnswer.toLowerCase();
+        showFeedback(isCorrect, q);
+        updateState(isCorrect, q, userVal);
+    }
+
+    function showFeedback(isCorrect, q) {
+        const fb = document.getElementById('feedback');
+        const title = document.getElementById('fb-title');
+        const text = document.getElementById('fb-text');
+        
+        fb.style.display = 'block';
+        fb.className = `feedback-box ${isCorrect ? 'correct' : 'wrong'}`;
+        title.innerText = isCorrect ? "Great Job! ✨" : "Incorrect ❌";
+        text.innerHTML = `<strong>Answer:</strong> ${q.correctAnswer}<br><small>${q.explanation}</small>`;
+
+        if (!isCorrect) {
+            document.getElementById('main-container').classList.add('shake');
+            setTimeout(() => document.getElementById('main-container').classList.remove('shake'), 400);
+        }
+
+        document.querySelectorAll('.btn-opt').forEach(b => {
+            if (b.innerText.toLowerCase() === q.correctAnswer.toLowerCase()) b.classList.add('correct');
+            else if (b.classList.contains('selected')) b.classList.add('wrong');
+        });
+
+        document.getElementById('main-action').innerText = "Continue";
+    }
+
+    function updateState(isCorrect, q, userVal) {
+        if (isCorrect) {
+            state.correct++;
+            state.streak++;
+            state.points += 10 + (state.streak * 2);
+        } else {
+            state.wrong++;
+            state.streak = 0;
+            state.errors.push({...q, userTyped: userVal});
+        }
+
+        if (!state.topics[q.category]) state.topics[q.category] = { c: 0, t: 0 };
+        state.topics[q.category].t++;
+        if (isCorrect) state.topics[q.category].c++;
+
+        updateStatsUI();
+    }
+
+    function updateStatsUI() {
+        document.getElementById('s-correct').innerText = state.correct;
+        document.getElementById('s-wrong').innerText = state.wrong;
+        document.getElementById('s-streak').innerText = state.streak;
+        document.getElementById('s-points').innerText = state.points;
+    }
+
+    function showResults() {
+        document.getElementById('quiz-screen').style.display = 'none';
+        const res = document.getElementById('results-screen');
+        res.style.display = 'block';
+
+        const percent = Math.round((state.correct / state.questions.length) * 100);
+        document.getElementById('res-percent').innerText = percent + "%";
+
+        const topicSummary = document.getElementById('topic-summary');
+        topicSummary.innerHTML = '';
+        for (let t in state.topics) {
+            const p = Math.round((state.topics[t].c / state.topics[t].t) * 100);
+            topicSummary.innerHTML += `<div class="tag tag-cat" style="padding:10px">${t}: ${p}%</div>`;
+        }
+
+        const log = document.getElementById('error-log');
+        log.innerHTML = '<h3>Review Errors:</h3><br>';
+        state.errors.forEach(err => {
+            log.innerHTML += `
+                <div class="error-item">
+                    <strong>Q:</strong> ${err.question}<br>
+                    <span style="color:var(--wrong)">You: ${err.userTyped || '(empty)'}</span> | 
+                    <span style="color:var(--correct)">Correct: ${err.correctAnswer}</span><br>
+                    <small>${err.explanation}</small>
+                </div>
+            `;
+        });
+        document.getElementById('btn-retry-errors').style.display = state.errors.length > 0 ? 'block' : 'none';
+    }
+
+    function retryErrors() {
+        state.questions = shuffle([...state.errors]);
+        state.errors = [];
+        state.currentIndex = 0;
+        state.correct = 0;
+        state.wrong = 0;
+        state.streak = 0;
+        document.getElementById('results-screen').style.display = 'none';
+        document.getElementById('quiz-screen').style.display = 'block';
+        loadQuestion();
+    }
+</script>
+</body>
+</html>
